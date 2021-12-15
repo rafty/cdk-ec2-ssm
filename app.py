@@ -1,28 +1,26 @@
 #!/usr/bin/env python3
 import os
-
 import aws_cdk as cdk
+from stacks.vpc_stack import VpcStack
+from stacks.ec2_stack import Ec2Stack
 
-from cdk_ec2_ssm.cdk_ec2_ssm_stack import CdkEc2SsmStack
-
+env = cdk.Environment(
+    account=os.environ.get("CDK_DEPLOY_ACCOUNT", os.environ["CDK_DEFAULT_ACCOUNT"]),
+    region=os.environ.get("CDK_DEPLOY_REGION", os.environ["CDK_DEFAULT_REGION"]),
+)
 
 app = cdk.App()
-CdkEc2SsmStack(app, "CdkEc2SsmStack",
-    # If you don't specify 'env', this stack will be environment-agnostic.
-    # Account/Region-dependent features and context lookups will not work,
-    # but a single synthesized template can be deployed anywhere.
 
-    # Uncomment the next line to specialize this stack for the AWS Account
-    # and Region that are implied by the current CLI configuration.
+vpc_stack = VpcStack(app, "CdkEc2SsmStack", env=env)
 
-    #env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
+ec2_stack = Ec2Stack(
+    app,
+    'Ec2Stack',
+    vpc=vpc_stack.vpc,
+    private_subnet_1a=vpc_stack.subnet_private_1a,
+    route_table=vpc_stack.route_table,
+    env=env)
 
-    # Uncomment the next line if you know exactly what Account and Region you
-    # want to deploy the stack to. */
-
-    #env=cdk.Environment(account='123456789012', region='us-east-1'),
-
-    # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-    )
+ec2_stack.add_dependency(vpc_stack)
 
 app.synth()
